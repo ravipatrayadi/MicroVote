@@ -1,0 +1,89 @@
+name: Build Poll
+
+on:
+  push:
+    branches:
+      - "main"
+    # Trigger the workflow on any push to the 'main' branch
+    paths:
+      - "Poll/**"
+      - ".github/workflows/ci-cd-build-poll.yaml"
+    # Specify the files and directories that will trigger the workflow when modified
+  pull_request:
+    branches:
+      - "main"
+    # Trigger the workflow on any pull request targeting the 'main' branch
+    paths:
+      - "Poll/**"
+      - ".github/workflows/ci-cd-build-poll.yaml"
+    # Specify the files and directories that will trigger the workflow when a pull request is created or updated
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    # The job will run on the latest version of Ubuntu
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        # This step checks out the code from the repository
+
+      # Step 1: Set up Docker Buildx for multi-platform builds
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        # This action sets up Docker Buildx, which is needed for building multi-platform Docker images
+
+      # Step 2: Log in to Docker Hub using credentials stored in secrets
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+        # This step logs into Docker Hub using the credentials stored in GitHub Secrets
+
+      # Step 3: Build and push Docker image to Docker Hub
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./Poll
+          # The context is the directory containing the Dockerfile and other build artifacts
+          file: Poll/Dockerfile
+          # Specify the path to the Dockerfile
+
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          # Specify the platforms to build the Docker image for
+
+          push: true
+          # Push the built image to Docker Hub
+
+          tags: ${{ secrets.DOCKER_USERNAME }}/my-polling-app:poll-${{ github.run_id }}
+          # Tag the Docker image with the username and GitHub run ID for uniqueness
+
+  update-image-tag-in-helm-values:
+    runs-on: ubuntu-latest # Specifies the operating system for the job
+
+    needs: docker # Indicates that this job depends on the successful completion of the 'docker' job
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.TOKEN }} # Uses a secret token for accessing the repository
+
+      - name: Update image tag in Helm chart
+        # Use sed to update the image tag in the Helm values.yaml file with the GitHub run ID
+        run: |
+          sed -i '/deployment1:/,/tag:/s/tag: .*/tag: '"${{ github.run_id }}"'/' specifications/values.yaml
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.email "pranayreddy.k12@gmail.com"
+          git config --global user.name "PranayReddy-K"
+
+          git add specifications/values.yaml
+
+          cat specifications/values.yaml
+
+          git commit -m "feat: Update image tag in Helm chart to GitHub run ID ${{ github.run_id }}"
+
+          git push

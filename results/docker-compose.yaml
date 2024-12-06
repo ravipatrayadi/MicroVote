@@ -1,0 +1,59 @@
+services:
+  sut:
+    build: ./tests/
+    depends_on:
+      - poll
+      - results
+      - worker
+    networks:
+      - front-tier
+
+  poll:
+    build: ../Poll/
+    ports: ["80"]
+    depends_on:
+      - redis
+      - db
+    networks:
+      - front-tier
+      - back-tier
+
+  results:
+    build: .
+    ports: ["80"]
+    depends_on:
+      - redis
+      - db
+    networks:
+      - front-tier
+      - back-tier
+
+  worker:
+    build: ../worker/
+    depends_on:
+      - redis
+      - db
+    networks:
+      - back-tier
+
+  redis:
+    image: redis
+    networks:
+      - back-tier
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    volumes:
+      - "db-data:/var/lib/postgresql/data"
+    networks:
+      - back-tier
+
+volumes:
+  db-data:
+
+networks:
+  front-tier:
+  back-tier:

@@ -1,0 +1,23 @@
+# Deployment 1: Polling Application
+deployment1:
+  name: poll # Name of the first deployment
+  image:
+    repository: pranayreddy12/my-polling-app # Docker image repository for the polling app
+    pullPolicy: IfNotPresent # Pull policy for the image; only pull if not already present
+    tag: 11122994652
+
+# Deployment 2: Worker Application
+deployment2:
+  name: worker # Name of the second deployment
+  image:
+    repository: pranayreddy12/my-polling-app # Docker image repository for the worker app
+    pullPolicy: IfNotPresent # Pull policy for the image; only pull if not already present
+    tag: 11122826672
+
+# Deployment 3: Results Application
+deployment3:
+  name: results # Name of the third deployment
+  image:
+    repository: pranayreddy12/my-polling-app # Docker image repository for the results app
+    pullPolicy: IfNotPresent # Pull policy for the image; only pull if not already present
+    tag: 11123368208
